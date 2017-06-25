@@ -3,17 +3,25 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 )
 
-func getJSON(sqlString string, db *sql.DB) (string, error) {
+func getJSON(sqlString string, page int, lines int, db *sql.DB, id int) ([]byte, error) {
 	rows, err := db.Query(sqlString, 0, 10)
+	fmt.Println(id)
+	if id == 0 {
+		rows, err = db.Query(sqlString, page, lines)
+	} else {
+		rows, err = db.Query(sqlString, id, page, lines)
+	}
+
 	if !errorEval(err, "db Query") {
-		return "", err
+		return nil, err
 	}
 	defer rows.Close()
 	columns, err := rows.Columns()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	count := len(columns)
 	tableData := make([]map[string]interface{}, 0)
@@ -40,7 +48,8 @@ func getJSON(sqlString string, db *sql.DB) (string, error) {
 	}
 	jsonData, err := json.Marshal(tableData)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return string(jsonData), err
+	//return string(jsonData), err
+	return jsonData, err
 }

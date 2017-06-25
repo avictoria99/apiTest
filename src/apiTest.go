@@ -21,12 +21,30 @@ func errorEval(err error, where string) bool {
 	return true
 }
 
+func handlerIPTests(response http.ResponseWriter, request *http.Request) {
+
+	request.Header.Set("Content-type", "application/json")
+	err := request.ParseForm()
+	if err != nil {
+		http.Error(response, fmt.Sprintf("error parsing url %v", err), 500)
+	}
+
+	err1 := db.Ping()
+	if errorEval(err1, "Sql Ping") {
+		data, err := getJSON("select * from sample limit ?,?", 0, 100, db, 0)
+		if err == nil {
+			fmt.Printf(string(data))
+			fmt.Fprintln(response, string(data))
+		}
+	}
+}
+
 func handlerIPTest(w http.ResponseWriter, r *http.Request) {
 	err1 := db.Ping()
 	if errorEval(err1, "Sql Ping") {
-		data, err := getJSON("select * from sample limit ?,?", db)
+		data, err := getJSON("select id, name, salary  from sample WHERE ID=? LIMIT ?,?", 0, 100, db, 1)
 		if err == nil {
-			fmt.Printf(data)
+			//fmt.Printf(data)
 			fmt.Fprintln(w, data)
 		}
 	}
@@ -39,7 +57,8 @@ func main() {
 	err1 := db.Ping()
 	errorEval(err1, "Sql Ping")
 
-	http.HandleFunc("/test", handlerIPTest)
+	http.HandleFunc("/test", handlerIPTests)
+	http.HandleFunc("/test?id=?", handlerIPTest)
 
 	http.ListenAndServe("localhost:4200", nil)
 }
